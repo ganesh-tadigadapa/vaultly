@@ -349,8 +349,11 @@ tbody tr.sel { background: rgba(255, 145, 56, .06); }
 .lab-ic.ok { color: var(--ok); background: var(--ok-d); border: 1px solid rgba(47, 227, 139, .3); }
 .lab-card h4 { font-size: 14.5px; font-weight: 600; }
 .lab-card p { margin: 3px 0 0; color: var(--muted); font-size: 12.5px; line-height: 1.45; }
-.lab-card .ctl { display: flex; gap: 8px; margin-top: auto; }
-.lab-card .ctl select { flex: 1; }
+.lab-card .ctl { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+.lab-card .sels { display: flex; gap: 8px; min-width: 0; }
+.lab-card .sels select { flex: 1 1 0; min-width: 0; }
+.lab-card .ctl .btn { width: 100%; }
+.lab-card .info { font-size: 12px; color: var(--muted); min-height: 36px; display: flex; align-items: center; }
 .lab-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 16px; margin-bottom: 12px; }
 .log { display: flex; flex-direction: column; gap: 8px; max-height: 520px; overflow: auto; }
 .log-e { padding: 10px 12px; border-radius: 11px; background: rgba(0, 0, 0, .28); border: 1px solid var(--line); font-size: 12.5px; }
@@ -398,7 +401,7 @@ tbody tr.sel { background: rgba(255, 145, 56, .06); }
 .hist small { color: var(--faint); }
 .mgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .m { padding: 11px 12px; border-radius: 12px; background: rgba(0, 0, 0, .25); border: 1px solid var(--line); min-width: 0; }
-.m b { display: block; font: 600 19px/1.15 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.m b { display: block; font: 600 17px/1.2 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .m span { font-size: 11.5px; color: var(--muted); }
 
 /* ---------------- cubes (CSS) ---------------- */
@@ -433,8 +436,8 @@ tbody tr.sel { background: rgba(255, 145, 56, .06); }
 .s5 h5 { margin: 3px 0 0; font: 600 13px/1.3 var(--display); }
 .s5 .d { font-size: 12px; color: var(--muted); margin-top: 2px; overflow-wrap: anywhere; }
 .hash { font: 500 11.5px/1.5 var(--mono); }
-.hash .x { color: #ff6d82; background: rgba(255, 61, 87, .15); border-radius: 3px; }
-.hash .y { color: var(--ok); }
+.hash .hx { color: #ff6d82; }
+.hash .hy { color: var(--ok); }
 
 .part-vis { position: relative; }
 .part-vis svg { display: block; width: 100%; height: auto; }
@@ -569,7 +572,9 @@ dialog::backdrop { background: rgba(4, 3, 8, .72); backdrop-filter: blur(4px); }
   .features, .lab-grid, .kpis, .ana, .qcards { grid-template-columns: minmax(0, 1fr); }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .cluster { grid-template-columns: minmax(0, 1fr); }
+  .cluster > .fabric-wrap { order: -1; }
   .fabric-wrap { min-height: 420px; }
+  .m b { font-size: 15px; }
   .lc { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .lc-step { display: grid; grid-template-columns: 44px 1fr; gap: 0 12px; text-align: left; padding: 0 0 10px; }
   .lc-step::before { display: none; }
@@ -726,7 +731,7 @@ dialog::backdrop { background: rgba(4, 3, 8, .72); backdrop-filter: blur(4px); }
         </div>
         <div class="upl-grid">
           <label class="field full"><span>Object ID</span><input type="text" id="obj-id" placeholder="picked from the file name" spellcheck="false" autocomplete="off"></label>
-          <div class="field full"><span>Replication factor</span><div class="seg" id="rf-seg"></div></div>
+          <div class="field full"><span>Replication factor</span><div class="seg" id="rf-seg"></div><small class="faint" id="rf-note" style="font-size:11.5px"></small></div>
           <label class="field"><span>Write quorum</span>
             <select id="wq-sel"><option value="">Cluster default</option><option value="all">all</option><option value="majority">majority</option><option value="one">one</option></select></label>
           <div class="field"><span>&nbsp;</span><button class="btn hot" id="upload-btn" disabled>Upload to Vault</button></div>
@@ -735,12 +740,18 @@ dialog::backdrop { background: rgba(4, 3, 8, .72); backdrop-filter: blur(4px); }
         <div class="progress" id="upl-progress" hidden><i></i></div>
         <div id="upl-result"></div>
       </div>
-      <div class="glass pad">
-        <div class="card-h">
-          <h3>Your objects <span class="chip plain" id="obj-count">0</span></h3>
-          <input type="search" id="obj-filter" placeholder="Search objects…" style="width:220px;max-width:100%">
+      <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+        <div class="glass pad">
+          <div class="card-h">
+            <h3>Your objects <span class="chip plain" id="obj-count">0</span></h3>
+            <input type="search" id="obj-filter" placeholder="Search objects…" style="width:220px;max-width:100%">
+          </div>
+          <div class="tbl-wrap" id="obj-table"><div class="skel">Loading objects…</div></div>
         </div>
-        <div class="tbl-wrap" id="obj-table"><div class="skel">Loading objects…</div></div>
+        <div class="glass pad">
+          <div class="card-h"><h3>Replica placement</h3><span class="sub">which node holds which object · from metadata</span></div>
+          <div class="tbl-wrap" id="placement"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -1119,7 +1130,14 @@ function summary(e) {
     case "VERSION_CREATED": return `${o} v${v} created (was ${words(f.previous_state)}${f.previous_version ? " v" + f.previous_version : ""})`;
     case "TOMBSTONE_CREATED": return `${o} deleted · tombstone v${v}`;
     case "OBJECT_DELETE": return `${o} v${v ?? ""} deleted`;
-    case "NODE_UNAVAILABLE": return `${n} stopped answering health probes${f.error ? " · " + trim(f.error, 90) : ""}`;
+    case "NODE_UNAVAILABLE": return `${n} unreachable (detected by a failed ${f.detected_by === "request" ? "request" : "health probe"})${f.error ? " · " + trim(f.error.replace(/^.*?: (dial|Get|context)/, "$1"), 80) : ""}`;
+    case "OBJECT_READ_STARTED": return `${o} v${v} · candidates ${list(f.candidates)}`;
+    case "OBJECT_READ_COMPLETED": return `${o} v${v} served by ${f.served_by}${f.rejected?.length ? ` · rejected ${list(f.rejected)}` : ""}`;
+    case "RECONCILE_STARTED": return `${n}: checking ${f.replicas_held} held replica${f.replicas_held === 1 ? "" : "s"} against metadata (${words(f.trigger)})`;
+    case "RECONCILE_COMPLETED": {
+      const rm = f.removed || {}, rmn = sum(Object.values(rm));
+      return `${n}: ${f.objects} objects · ${f.verified} verified · ${f.adopted} adopted · ${rmn} removed${rmn ? " (" + Object.keys(rm).map(words).join(", ") + ")" : ""}${f.reclaimed_bytes ? ` · ${fmtBytes(f.reclaimed_bytes)} reclaimed` : ""}`;
+    }
     case "NODE_RECOVERED": return `${n} is answering again${f.down_ms != null ? " after " + fmtMs(f.down_ms) : ""}`;
     case "CHAOS_NODE_KILLED": case "CHAOS_NODE_TERMINATING": return `${n} process terminated by chaos`;
     case "CHAOS_REPLICA_CORRUPTED": return `${f.length} bytes flipped at offset ${f.offset} of ${o} on ${n}`;
@@ -1566,10 +1584,10 @@ class Fabric {
       if (!this.hero && (n.id === this.selId || n.id === this.hoverId)) {
         g.save(); g.translate(ctr.x, ctr.y); if (!REDUCED) g.rotate(t / 2400);
         g.setLineDash([4, 6]); g.strokeStyle = n.id === this.selId ? "rgba(255,255,255,.85)" : "rgba(255,255,255,.4)"; g.lineWidth = 1.3;
-        g.beginPath(); g.arc(0, 0, rpx * 1.25, 0, Math.PI * 2); g.stroke(); g.restore();
+        g.beginPath(); g.arc(0, 0, rpx * 1.12, 0, Math.PI * 2); g.stroke(); g.restore();
       }
       g.textAlign = "center";
-      const ly = ctr.y + hs * this.unit * ctr.s * 1.9 + 12;
+      const ly = ctr.y + (this.hero ? hs * this.unit * ctr.s * 1.9 + 12 : rpx * 1.12 + 13);
       g.font = this.hero ? "500 10.5px 'JetBrains Mono', monospace" : "600 12px Inter, system-ui";
       g.fillStyle = this.hero ? "rgba(200,190,215,.7)" : "rgba(245,241,248,.95)";
       g.fillText(n.id, ctr.x, ly);
@@ -1769,8 +1787,8 @@ function renderArch() {
     <text x="${x + 18}" y="${y + 50}" fill="#aaa2b8" font-family="JetBrains Mono, monospace" font-size="11">${sub}</text>
     ${lines.map((l, i) => `<text x="${x + 18}" y="${y + 78 + i * 20}" fill="#8f879d" font-family="Inter, sans-serif" font-size="12">${l}</text>`).join("")}</g>`;
   // paths
-  s += `<path id="ap1" d="M220 190 C 255 190, 265 190, 300 190" stroke="url(#ag-hot)" stroke-width="2" fill="none" class="flowline"/>
-        <path id="ap2" d="M540 190 C 575 190, 585 190, 620 190" stroke="url(#ag-hot)" stroke-width="2" fill="none" class="flowline"/>`;
+  s += `<path id="ap1" d="M220 190 C 255 190, 265 190, 300 190" stroke="#ff9138" stroke-opacity=".8" stroke-width="2" fill="none" class="flowline"/>
+        <path id="ap2" d="M540 190 C 575 190, 585 190, 620 190" stroke="#ff6d5a" stroke-opacity=".8" stroke-width="2" fill="none" class="flowline"/>`;
   s += box(30, 120, 190, 140, "Client apps", "HTTP · curl · this UI", ["PUT /objects/{id}", "GET /objects/{id}", "DELETE · CAS"], "#8d63ff");
   s += box(300, 100, 240, 180, "Coordinator", esc(`vault api · ${location.host}`), [`write quorum W=${esc(h.write_quorum ?? "—")}`, `read quorum R=${esc(h.read_quorum ?? "—")}`, "streams + hashes every byte", "chaos " + (h.chaos_enabled ? "enabled" : "disabled")], "#ff9138");
   s += box(620, 90, 240, 200, "Metadata · Placement", "versions · tombstones", ["rendezvous placement, RF " + (h.default_replication_factor ?? "—"), "integrity failure records", "risk-ordered repair queue", "scrubber · reconciler", "self-heal " + (h.self_heal_enabled ? "on" : "off")], "#ff4d6d");
@@ -1825,12 +1843,12 @@ function renderNodeDetail() {
       <span class="spacer"></span>${chipFor(n.status)}
     </div>
     <dl class="kv">
-      <dt>Health</dt><dd>${esc(n.state)} · since ${esc(ago(n.since))}</dd>
+      <dt>Health</dt><dd>${esc(n.state)} · ${esc(ago(n.since))}</dd>
       <dt>Last probe</dt><dd>${esc(ago(n.checked))}</dd>
-      <dt>Replicas</dt><dd>${m.replicas ?? "—"} on disk · ${n.tracked ?? "—"} in metadata</dd>
+      <dt>Replicas</dt><dd>${m.replicas ?? "—"} on disk · ${n.tracked ?? "—"} listed</dd>
       <dt>Bytes on disk</dt><dd>${m.bytes != null ? esc(fmtBytes(m.bytes)) : m.reachable === false ? "unreachable" : "—"}</dd>
       <dt>Filesystem</dt><dd>${usedPct != null ? `${usedPct}% used · ${esc(fmtBytes(cap.free_bytes))} free` : "—"}</dd>
-      <dt>Link</dt><dd>${l.partitioned ? '<span class="t-part">cut</span>' : "connected"}${l.latency_ms ? ` · <span class="t-warn">+${l.latency_ms} ms</span>` : ""}</dd>
+      <dt>Link</dt><dd>${l.partitioned ? '<span class="t-part">cut (injected)</span>' : n.state !== "HEALTHY" ? "no injected fault (node down)" : "connected"}${l.latency_ms ? ` · <span class="t-warn">+${l.latency_ms} ms</span>` : ""}</dd>
       <dt>Blocked · cut · delayed</dt><dd>${l.requests_blocked ?? 0} · ${l.transfers_cut ?? 0} · ${l.requests_delayed ?? 0}</dd>
       <dt>Bad replicas</dt><dd>${d.corrupted_replicas ?? 0} corrupted · ${d.stale_replicas ?? 0} stale · ${d.missing_replicas ?? 0} missing</dd>
     </dl>
@@ -1870,7 +1888,8 @@ function renderRF() {
   U.rf = Math.max(1, Math.min(U.rf, total));
   const n = Math.min(total, 9);
   setHTML($("#rf-seg"), Array.from({ length: n }, (_, i) => i + 1).map(k =>
-    `<button type="button" data-rf="${k}" class="${k === U.rf ? "on" : ""}" title="${k > healthy ? `only ${healthy} nodes are healthy` : `${k} replica${k > 1 ? "s" : ""}`}">${k}${k === def ? "<small style=\"opacity:.55\">·d</small>" : ""}</button>`).join(""));
+    `<button type="button" data-rf="${k}" class="${k === U.rf ? "on" : ""}" title="${k > healthy ? `only ${healthy} nodes are healthy` : `${k} replica${k > 1 ? "s" : ""}`}${k === def ? " (cluster default)" : ""}">${k}</button>`).join(""));
+  $("#rf-note").textContent = `default ${def} · ${healthy}/${total} nodes healthy${U.rf > healthy ? ` · RF ${U.rf} needs more healthy nodes than exist, unless W < RF` : ""}`;
 }
 function renderUpload() {
   const f = U.file, rf = U.rf || 3;
@@ -1955,14 +1974,31 @@ function renderObjects() {
   let html;
   if (!all.length) html = `<div class="empty" style="padding:34px">No objects yet. Drop a file on the left and it's written to ${S.health?.default_replication_factor ?? 3} nodes, each verifying its SHA-256.</div>`;
   else if (!objs.length) html = `<div class="empty">No object matches “${esc(q)}”.</div>`;
-  else html = `<table><thead><tr><th>Name</th><th>Size</th><th class="hide-sm">Version</th><th>Replicas</th><th>Health</th><th class="hide-sm">Modified</th><th></th></tr></thead><tbody>${objs.map(o => {
+  else html = `<table><thead><tr><th>Name</th><th class="hide-sm">Size</th><th class="hide-sm">Version</th><th class="hide-sm">Replicas</th><th>Health</th><th class="hide-sm">Modified</th><th></th></tr></thead><tbody>${objs.map(o => {
     const h = objHealth(o);
     return `<tr class="${o.id === S.selObj ? "sel" : ""}"><td><div class="obj-name">${fileBadge(o.id)}<div style="min-width:0"><div class="ellipsis" style="font-weight:600">${esc(o.id)}</div><div class="faint mono ellipsis" style="font-size:11px">${esc(short(o.sha256, 12))}…</div></div></div></td>
-      <td class="num nowrap">${esc(fmtBytes(o.size))}</td><td class="hide-sm mono">v${o.version}</td><td>${repDots(o)}</td><td>${durChip(h.state)}</td>
+      <td class="num nowrap hide-sm">${esc(fmtBytes(o.size))}</td><td class="hide-sm mono">v${o.version}</td><td class="hide-sm">${repDots(o)}</td><td>${durChip(h.state)}</td>
       <td class="hide-sm faint nowrap">${esc(ago(o.updated_at))}</td>
       <td><div class="acts"><button class="btn xs" data-oa="inspect" data-id="${esc(o.id)}" title="Inspect" aria-label="Inspect ${esc(o.id)}">${IC.eye}</button><button class="btn xs" data-oa="download" data-id="${esc(o.id)}" title="Download" aria-label="Download ${esc(o.id)}">${IC.down}</button><button class="btn xs bad" data-oa="delete" data-id="${esc(o.id)}" title="Delete" aria-label="Delete ${esc(o.id)}">${IC.trash}</button></div></td></tr>`;
   }).join("")}</tbody></table>`;
   setHTML($("#obj-table"), html);
+}
+function renderPlacement() {
+  const ns = allNodes(), objs = S.objects.slice(0, 10), el = $("#placement");
+  if (!objs.length) { setHTML(el, `<div class="empty">Placement shows up here after the first upload. Rendezvous hashing picks RF nodes for each object, so replicas spread across the cluster.</div>`); return; }
+  const cnt = Object.fromEntries(ns.map(n => [n.id, 0]));
+  S.objects.forEach(o => (o.replicas || []).forEach(id => { if (id in cnt) cnt[id]++; }));
+  const cell = (o, n) => {
+    const r = (objHealth(o).replicas || []).find(x => x.node_id === n.id);
+    if (!r) return `<span class="faint">·</span>`;
+    const st = r.replica_state;
+    const cls = st === "CURRENT" ? "" : st === "CORRUPTED" ? "bad" : st === "UNAVAILABLE" ? (n.status === "partitioned" ? "part" : "bad") : st === "MISSING" ? "miss" : "warn";
+    return `<span class="rep-dots" style="justify-content:center"><i class="${cls}" title="${esc(o.id)} on ${esc(n.id)}: ${esc(words(st))}" style="width:13px;height:13px"></i></span>`;
+  };
+  setHTML(el, `<table><thead><tr><th>Object</th>${ns.map(n => `<th style="text-align:center"><span class="dot ${NS[n.status].tone}" style="display:inline-block;width:6px;height:6px;margin-right:5px;box-shadow:none"></span>${esc(n.id.replace(/^node-/, "n"))}</th>`).join("")}</tr></thead>
+    <tbody>${objs.map(o => `<tr><td class="mono ellipsis" style="max-width:220px;font-size:12px">${esc(o.id)}</td>${ns.map(n => `<td style="text-align:center">${cell(o, n)}</td>`).join("")}</tr>`).join("")}
+    <tr><td class="faint" style="font-size:11.5px">replicas listed</td>${ns.map(n => `<td style="text-align:center" class="num faint">${cnt[n.id]}</td>`).join("")}</tr></tbody></table>
+    ${S.objects.length > objs.length ? `<div class="faint" style="font-size:11.5px;margin-top:8px">Showing the ${objs.length} most recently modified of ${S.objects.length} objects.</div>` : ""}`);
 }
 async function download(id, btn) {
   try {
@@ -2022,20 +2058,20 @@ async function inspect(id, verify = false) {
 /* ---------------- failure lab ---------------- */
 const LAB = [
   { k: "kill", ic: "skull", tone: "bad", title: "Kill Node", desc: "Terminates the node process, like a crash. Vault marks it unavailable and rebuilds its replicas on spare nodes.",
-    ctl: `<select id="lab-kill-node" aria-label="Node to kill"></select><button class="btn bad" id="lab-kill">Kill</button>` },
+    ctl: `<div class="sels"><select id="lab-kill-node" aria-label="Node to kill"></select></div><button class="btn bad" id="lab-kill">Kill node</button>` },
   { k: "corrupt", ic: "bolt", tone: "bad", title: "Corrupt Replica", desc: "Flips 16 bytes of one replica on that node's disk. Vault is not told; its scrub or the next read finds out.",
-    ctl: `<select id="lab-cor-obj" aria-label="Object"></select><select id="lab-cor-node" aria-label="Replica node"></select><button class="btn bad" id="lab-corrupt">Corrupt</button>` },
+    ctl: `<div class="sels"><select id="lab-cor-obj" aria-label="Object"></select><select id="lab-cor-node" aria-label="Replica node" style="flex:0 1 44%"></select></div><button class="btn bad" id="lab-corrupt">Corrupt replica</button>` },
   { k: "partition", ic: "part", tone: "part", title: "Partition Node", desc: "Cuts the coordinator→node link. The node keeps running with its data and is reconciled when the link heals.",
-    ctl: `<select id="lab-part-node" aria-label="Node to partition"></select><select id="lab-part-dur" aria-label="Duration" style="flex:0 0 auto"><option value="">until healed</option><option value="15s">15 s</option><option value="30s">30 s</option><option value="60s">60 s</option></select><button class="btn part" id="lab-partition">Cut</button>` },
+    ctl: `<div class="sels"><select id="lab-part-node" aria-label="Node to partition"></select><select id="lab-part-dur" aria-label="Duration" style="flex:0 1 44%"><option value="">until healed</option><option value="15s">for 15 s</option><option value="30s">for 30 s</option><option value="60s">for 60 s</option></select></div><button class="btn part" id="lab-partition">Cut link</button>` },
   { k: "latency", ic: "clock", tone: "warn", title: "Add Latency", desc: "Delays every request on the link. Above the 800 ms probe timeout the node looks unreachable, as a real slow link would.",
-    ctl: `<select id="lab-lat-node" aria-label="Node"></select><select id="lab-lat-ms" aria-label="Latency" style="flex:0 0 auto"><option value="200">200 ms</option><option value="400" selected>400 ms</option><option value="1200">1200 ms</option><option value="0">clear</option></select><button class="btn warn" id="lab-latency">Apply</button>` },
+    ctl: `<div class="sels"><select id="lab-lat-node" aria-label="Node"></select><select id="lab-lat-ms" aria-label="Latency" style="flex:0 1 44%"><option value="200">+200 ms</option><option value="400" selected>+400 ms</option><option value="1200">+1200 ms</option><option value="0">clear</option></select></div><button class="btn warn" id="lab-latency">Apply latency</button>` },
   { k: "scrub", ic: "scan", tone: "ok", title: "Run Scrub", desc: "Every node re-hashes each replica of each current version and the result is compared with metadata. No object bytes move.",
-    ctl: `<span class="muted" id="lab-scrub-info" style="font-size:12px;align-self:center;flex:1"></span><button class="btn ok" id="lab-scrub">Run scrub</button>` },
+    ctl: `<div class="info" id="lab-scrub-info"></div><button class="btn ok" id="lab-scrub">Run scrub now</button>` },
   { k: "heal", ic: "heal", tone: "ok", title: "Heal All", desc: "Restores every link and clears latency, then reconciles every reachable node against metadata and sweeps for repairs.",
-    ctl: `<span class="muted" id="lab-heal-info" style="font-size:12px;align-self:center;flex:1"></span><button class="btn ok" id="lab-heal">Heal all</button>` },
+    ctl: `<div class="info" id="lab-heal-info"></div><button class="btn ok" id="lab-heal">Heal all + reconcile</button>` },
 ];
 function initLab() {
-  $("#lab-grid").innerHTML = LAB.map(c => `<div class="glass lab-card" id="lab-${c.k}-card"><div class="top"><div class="lab-ic ${c.tone}">${IC[c.ic]}</div><div><h4>${c.title}</h4><p>${c.desc}</p></div></div><div class="ctl" style="flex-wrap:wrap">${c.ctl}</div></div>`).join("");
+  $("#lab-grid").innerHTML = LAB.map(c => `<div class="glass lab-card" id="lab-${c.k}-card"><div class="top"><div class="lab-ic ${c.tone}">${IC[c.ic]}</div><div><h4>${c.title}</h4><p>${c.desc}</p></div></div><div class="ctl">${c.ctl}</div></div>`).join("");
   $("#lab-cor-obj").addEventListener("change", renderLab);
 }
 function labLog(title, ok, body) {
@@ -2285,6 +2321,7 @@ function corruptionIncidents() {
       if (!c.detect) continue;
       if (e.event === "REPAIR_REPLICA_WRITTEN") c.repair ||= e;
       if (e.event === "REPAIR_CHECKSUM_VERIFIED") c.verify ||= e;
+      if (e.event === "REPAIR_METADATA_COMMITTED") c.commit ||= e;
       if (e.event === "REPAIR_COMPLETED" && f.outcome === "restored") { c.done = e; c.closed = true; }
     }
   }
@@ -2292,7 +2329,7 @@ function corruptionIncidents() {
 }
 function hashDiff(exp, act, n = 20) {
   exp = String(exp || "").slice(0, n); act = String(act || "").slice(0, n);
-  return `<div class="hash">expected <span class="y">${esc(exp)}…</span></div><div class="hash">found&nbsp;&nbsp;&nbsp;&nbsp;${[...act].map((ch, i) => ch === exp[i] ? esc(ch) : `<span class="x">${esc(ch)}</span>`).join("")}…</div>`;
+  return `<div class="hash">expected <span class="hy">${esc(exp)}…</span></div><div class="hash">found&nbsp;&nbsp;&nbsp;&nbsp;${[...act].map((ch, i) => ch === exp[i] ? esc(ch) : `<span class="hx">${esc(ch)}</span>`).join("")}…</div>`;
 }
 function renderCorruption() {
   const el = $("#corruption"), cs = corruptionIncidents(), c = cs[cs.length - 1];
@@ -2311,12 +2348,17 @@ function renderCorruption() {
     return;
   }
   const obj = S.objects.find(o => o.id === c.object);
+  const cm = c.commit?.fields;
   const tgt = c.repair?.fields?.target;
-  const ids = [...new Set([...(obj?.replicas || []), c.node].filter(Boolean))].filter(id => id !== tgt).slice(0, 3);
-  if (tgt) ids.push(tgt);
+  // The replica set as it was during this incident: before/after from the
+  // commit event, or the live metadata while the repair is still pending.
+  let before = cm?.replicas_before || obj?.replicas || [];
+  if (c.node && !before.includes(c.node)) before = [...before, c.node];
+  const added = cm ? (cm.added || []) : tgt ? [tgt] : [];
+  const ids = [...before.filter(id => !added.includes(id)).slice(0, 4 - Math.min(added.length, 2)), ...added.slice(0, 2)];
   const exp = c.detect?.fields?.expected_sha256 || c.chaos?.fields?.sha256_before || obj?.sha256, act = c.detect?.fields?.actual_sha256 || c.chaos?.fields?.sha256_after;
-  const reps = ids.slice(-4).map(id => {
-    const bad = id === c.node && !c.done, repl = id === c.node && c.done, rebuilt = id === tgt;
+  const reps = ids.map(id => {
+    const rebuilt = added.includes(id), bad = id === c.node && !cm && !c.done, repl = id === c.node && !rebuilt && (!!cm || c.done);
     const cls = bad ? "bad" : repl ? "" : "ok";
     return `<div class="cor-rep ${cls}"><div class="cube-wrap" style="--c:${bad ? "#ff3d57" : repl ? "#5c5468" : "#2fe38b"}"><div class="cube ${bad ? "bad glitch" : repl ? "dim" : ""}" style="--s:34px"><i></i><i></i><i></i><b>${bad ? "!" : rebuilt ? "✓" : ""}</b></div></div><div class="n">${esc(id)}</div><small class="${bad ? "t-bad" : repl ? "faint" : "t-ok"}">${bad ? (c.detect ? "corrupted" : "silently corrupted") : repl ? "replaced" : rebuilt ? (c.verify ? "rebuilt · verified" : "rebuilding") : "healthy"}</small></div>`;
   }).join("");
@@ -2354,7 +2396,7 @@ function renderPartition() {
     const k = arr.length, t = k === 1 ? .5 : i / (k - 1);
     return { n, x: x0 + (x1 - x0) * (k > 3 ? (i % 2) : .5), y: y0 + (y1 - y0) * t };
   });
-  const L = place(side, split ? 200 : 300, split ? 250 : 470, 64, VH - 44), Rn = place(cut, 440, 520, 64, VH - 44);
+  const L = place(side, split ? 190 : 300, split ? 255 : 470, 66, VH - 64), Rn = place(cut, 440, 520, 66, VH - 64);
   for (const p of L) {
     const col = `rgb(${NS[p.n.status].col.join(",")})`, dead = p.n.status === "unavailable";
     svg += `<line x1="${cx}" y1="${cy}" x2="${p.x}" y2="${p.y}" stroke="${col}" stroke-opacity="${dead ? .3 : .6}" stroke-width="1.5" ${dead ? 'stroke-dasharray="3 6"' : 'class="flowline"'}/>`;
@@ -2530,8 +2572,11 @@ function renderEvents() {
   setHTML($("#ev-filters"), EVF.map(([k, l]) => `<button class="chipbtn ${S.evFilter === k ? "on" : ""}" data-evf="${k}">${l}<span class="n">${counts[k]}</span></button>`).join(""));
   const evs = S.events.filter(e => evVisible(e, S.evFilter)).slice(-200).reverse();
   if (S.eventsDisabled) { setHTML($("#ev-list"), `<div class="empty">The event recorder is disabled on this API.</div>`); return; }
-  if (!S.selEvent || !S.events.some(e => e.seq === S.selEvent)) {
-    const notable = S.events.slice().reverse().find(e => !ROUTINE.has(e.event) && (tags(e).size || e.level !== "INFO")) || S.events[S.events.length - 1];
+  if (!S.evPinned || !S.events.some(e => e.seq === S.selEvent)) {
+    S.evPinned = false;
+    const rev = S.events.filter(e => evVisible(e, S.evFilter)).reverse();
+    const notable = rev.find(e => { const t = tags(e); return t.has("failures") || t.has("chaos") || (t.has("repairs") && !ROUTINE.has(e.event)); })
+      || rev.find(e => !ROUTINE.has(e.event)) || S.events[S.events.length - 1];
     S.selEvent = notable?.seq ?? null;
   }
   setHTML($("#ev-list"), evs.length ? evs.map(e => `<button class="ev ${e.seq === S.selEvent ? "on" : ""} ${e.seq >= S.freshSeq && S.freshSeq ? "new" : ""}" data-seq="${e.seq}">
@@ -2561,7 +2606,7 @@ function renderAll() {
   renderConn();
   if (!S.health) return;
   if (S.initSeq == null && S.eventsLoaded) S.initSeq = S.lastSeq;
-  const parts = [renderHero, renderFeatures, renderArch, renderCluster, renderRF, renderUpload, renderObjects, renderLab,
+  const parts = [renderHero, renderFeatures, renderArch, renderCluster, renderRF, renderUpload, renderObjects, renderPlacement, renderLab,
     renderHealing, renderCorruption, renderPartition, renderQuorum, renderAnalytics, renderEvents];
   for (const fn of parts) { try { fn(); } catch (err) { console.error(fn.name, err); } }
   if (S.selObj && (S.consFor !== S.selObj || S.tick % 3 === 0)) loadConsistency(false);
@@ -2612,8 +2657,8 @@ function wire() {
     if (t.dataset.heal) { nodeAction("heal", t.dataset.heal, t); return; }
     if (t.hasAttribute("data-healall")) { labActions["lab-heal"](t); return; }
     if (t.dataset.partition) { const id = t.dataset.partition; labRun(t, `Partition ${id}`, () => api(`/chaos/partition/${enc(id)}?duration=30s`, { method: "POST" }), r => `link cut for 30 s${r.heal_at ? `, heals at ${clock(r.heal_at)}` : ""}`); return; }
-    if (t.dataset.evf) { S.evFilter = t.dataset.evf; renderEvents(); return; }
-    if (t.dataset.seq) { S.selEvent = +t.dataset.seq; renderEvents(); if (window.innerWidth < 1100) $("#explain").scrollIntoView({ block: "nearest" }); return; }
+    if (t.dataset.evf) { S.evFilter = t.dataset.evf; S.evPinned = false; renderEvents(); return; }
+    if (t.dataset.seq) { S.selEvent = +t.dataset.seq; S.evPinned = true; renderEvents(); if (window.innerWidth < 1100) $("#explain").scrollIntoView({ block: "nearest" }); return; }
     if (t.closest(".nav-links") && window.innerWidth <= 1100) { $("#nav-links").classList.remove("open"); $("#burger").setAttribute("aria-expanded", "false"); }
   });
   $("#dlg").addEventListener("click", ev => { if (ev.target === ev.currentTarget) ev.currentTarget.close(); });
